@@ -1,0 +1,54 @@
+services:
+  tidb:
+    image: pingcap/tidb:latest
+    container_name: moincloud_tidb
+    ports:
+      - "4000:4000"
+      - "10080:10080"
+    environment:
+      TIDB_ROOT_PASSWORD: root
+    volumes:
+      - ./data/tidb:/var/lib/tidb
+    networks:
+      - moincloud_network
+    healthcheck:
+      test: ["CMD", "mysql", "-h127.0.0.1", "-P4000", "-uroot", "-e", "SELECT 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: moincloud_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"  # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    volumes:
+      - ./data/rabbitmq:/var/lib/rabbitmq
+    networks:
+      - moincloud_network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  memcached:
+    image: memcached:alpine
+    container_name: moincloud_memcached
+    ports:
+      - "11211:11211"
+    networks:
+      - moincloud_network
+    command: ["-m", "256"]  # 256MB メモリ制限
+
+networks:
+  moincloud_network:
+    driver: bridge
+
+volumes:
+  tidb_data:
+  rabbitmq_data:
